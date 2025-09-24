@@ -17,7 +17,7 @@ from stem.control import Controller
 CONSENT_BTN_XPATH = '/html/body/div[2]/div[1]/div[2]/c-wiz/main/div[3]/div/div/div[2]/div/div/button'
 STATE_FILE = "data.json"
 EMAILS_FILE = "emails.txt"
-# MFA_EMAILS_FILE = "mfa_emails.txt"
+MFA_EMAILS_FILE = "mfa_emails.txt"
 PROXIES_FILE = "proxies.txt"
 POST_URL = "http://10.0.1.3:3031/user"  # IMPORTANT: Update this to your wplacer controller's port (e.g., 3000)
 CTRL_HOST, CTRL_PORT = "127.0.0.1", 9151
@@ -315,31 +315,31 @@ async def login_once(email, password, recovery_email=None):
         return cookie
 
 # ===================== EMAIL & STATE HANDLING =====================
-def remove_user_from_emails_file(email_to_remove, path=EMAILS_FILE):
+def remove_user_from_emails_file(email_to_remove, path=EMAILS_FILE, mfa_emails_path=MFA_EMAILS_FILE):
     emails = pathlib.Path(path)
-    # mfa_emails = pathlib.Path(mfa_emails)
+    mfa_emails = pathlib.Path(mfa_emails_path)
     if not emails.exists(): return
-    # if not mfa_emails.exists():
-    #     mfa_emails.touch()
+    if not mfa_emails.exists():
+        mfa_emails.touch()
     try:
         lines = emails.read_text(encoding="utf-8").splitlines()
-        # mfa_lines = mfa_emails.read_text(encoding="utf-8").splitlines()
+        mfa_lines = mfa_emails.read_text(encoding="utf-8").splitlines()
 
         updated_lines = []
 
         for line in lines:
             if line.strip().startswith(email_to_remove):
+                mfa_lines.append(line)
                 continue
-                # mfa_lines.append(line)
             else:
                 updated_lines.append(line)
 
-        # if mfa_lines:
-        #     tmp_mfa_emails = mfa_emails.with_suffix(f"{mfa_emails.suffix}.tmp")
-        #     with open(tmp_mfa_emails, "w", encoding="utf-8") as f:
-        #         f.write("\n".join(mfa_lines))
-        #     os.replace(tmp_mfa_emails, mfa_emails)
-        #     print(f"[INFO] Wrote {email_to_remove} to {mfa_emails_path}")
+        if mfa_lines:
+            tmp_mfa_emails = mfa_emails.with_suffix(f"{mfa_emails.suffix}.tmp")
+            with open(tmp_mfa_emails, "w", encoding="utf-8") as f:
+                f.write("\n".join(mfa_lines))
+            os.replace(tmp_mfa_emails, mfa_emails)
+            print(f"[INFO] Wrote {email_to_remove} to {mfa_emails_path}")
 
         tmp_path = emails.with_suffix(f"{emails.suffix}.tmp")
         with open(tmp_path, "w", encoding="utf-8") as f:
